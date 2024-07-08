@@ -45,7 +45,6 @@ diarySchema.set("toJSON", {
     returnedObject.id = returnedObject._id.toHexString()
     delete returnedObject._id
     delete returnedObject.__v
-    delete returnedObject.passwordHash
   },
 })
 

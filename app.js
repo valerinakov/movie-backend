@@ -1,6 +1,15 @@
 const { MONGODB_URI } = require("./utils/config")
 const express = require("express")
-const User = require("./models/user")
+require("express-async-errors")
+const cors = require("cors")
+const usersRouter = require("./controllers/users")
+const loginRouter = require("./controllers/login")
+const movieRouter = require("./controllers/movies")
+const {
+  errorHandler,
+  tokenExtractor,
+  userExtractor,
+} = require("./utils/middleware")
 
 const mongoose = require("mongoose")
 
@@ -19,20 +28,14 @@ mongoose
     console.log("error connecting to MongoDB:", error.message)
   })
 
-app.get("/", async (req, res) => {
-  //   const newUser = new User({
-  //     username: "test",
-  //     diary: [
-  //       {
-  //         movieId: "12",
-  //         rating: 5,
-  //         review: "Great day!",
-  //       },
-  //     ],
-  //   })
+app.use(express.json())
+app.use(cors())
+app.use(tokenExtractor)
 
-  //   const savedUser = await newUser.save()
-  res.send("hello")
-})
+app.use("/api/users", usersRouter)
+app.use("/api/login", loginRouter)
+app.use("/api/movies", movieRouter)
+
+app.use(errorHandler)
 
 module.exports = app
