@@ -32,9 +32,9 @@ app.use(express.json())
 app.use(cors())
 app.use(tokenExtractor)
 
-app.use("/api/users", usersRouter)
+app.use("/api/users", userExtractor, usersRouter)
 app.use("/api/login", loginRouter)
-app.use("/api/movies", movieRouter)
+app.use("/api/movies", userExtractor, movieRouter)
 
 app.use(errorHandler)
 

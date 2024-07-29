@@ -1,17 +1,25 @@
 const mongoose = require("mongoose")
 
-const diarySchema = new mongoose.Schema({
+const movieSchema = new mongoose.Schema({
   movieId: {
+    type: String,
+    required: true,
+  },
+  poster: {
     type: String,
     required: true,
   },
   rating: {
     type: Number,
-    required: true,
+    required: false,
   },
   review: {
     type: String,
-    required: true,
+    required: false,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
 })
 
@@ -19,28 +27,33 @@ const userSchema = new mongoose.Schema({
   username: {
     type: String,
     required: true,
-    // unique: true,
+    unique: true,
   },
   name: String,
   passwordHash: String,
-  watchlist: [
+  watchlist: [movieSchema],
+  diary: [movieSchema],
+  watched: [movieSchema],
+  friends: [
     {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     },
   ],
-  diary: [diarySchema],
 })
 
 userSchema.set("toJSON", {
   transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toHexString()
+    if (returnedObject._id) {
+      returnedObject.id = returnedObject._id.toHexString()
+    }
     delete returnedObject._id
     delete returnedObject.__v
     delete returnedObject.passwordHash
   },
 })
 
-diarySchema.set("toJSON", {
+movieSchema.set("toJSON", {
   transform: (document, returnedObject) => {
     returnedObject.id = returnedObject._id.toHexString()
     delete returnedObject._id

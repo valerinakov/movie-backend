@@ -17,6 +17,8 @@ const errorHandler = (error, request, response, next) => {
     return response.status(400).json({ error: "token missing or invalid" })
   } else if (error.name === "TokenExpiredError") {
     return response.status(401).json({ error: "token expired" })
+  } else if (error.name === "CastError") {
+    return response.status(401).json({ error: "invalid user id" })
   }
 
   next(error)
@@ -37,7 +39,6 @@ const userExtractor = async (request, response, next) => {
     if (!decodedToken.id) {
       return response.status(401).json({ error: "token invalid" })
     }
-
     request.user = await User.findById(decodedToken.id)
   }
 
