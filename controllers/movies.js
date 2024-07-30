@@ -5,59 +5,80 @@ const User = require("./../models/user")
 
 const moviedb = new MovieDb(process.env.MOVIEDB_KEY)
 
-movieRouter.get("/search/:page/:title", async (req, res) => {
+movieRouter.get("/search/:page/:title", async (request, response) => {
+  if (isNaN(request.params.page)) {
+    return response.status(401).json({
+      error: "Page identifier must be a number",
+    })
+  }
+
   const parameters = {
-    query: req.params.title,
-    page: req.params.page,
+    query: request.params.title,
+    page: request.params.page,
   }
   const movies = await moviedb.searchMovie(parameters)
-  res.send(movies)
+  response.send(movies)
 })
 
-movieRouter.get("/info/:id", async (req, res) => {
-  const movieInfo = await moviedb.movieInfo(req.params.id)
-  res.send(movieInfo)
+movieRouter.get("/info/:id", async (request, response) => {
+  const movieInfo = await moviedb.movieInfo(request.params.id)
+  if (movieInfo) {
+    return response.send(movieInfo)
+  }
 })
 
-movieRouter.post("/addmovie/diary/:id", async (req, res) => {
-  if (!req.user) {
-    console.log("must be logged add a movie to diary")
-    res.end()
+movieRouter.post("/addmovie/diary/:id", async (request, response) => {
+  if (!request.user) {
+    return response.status(401).json({
+      error: "Must be logged in to add a movie to your diary",
+    })
   }
 
-  const movieInfo = await moviedb.movieInfo(req.params.id)
+  const movieInfo = await moviedb.movieInfo(request.params.id)
 
   const movieToBeSaved = {
     movieId: movieInfo.id,
-    poster: movieInfo.poster_path,
+    poster: movieInfo.poster_path !== null ? movieInfo.poster_path : "",
     rating: 2,
     review: "test",
   }
 
-  req.user.diary = req.user.diary.concat(movieToBeSaved)
+  const foundInWatchlist = request.user.watchlist.find(
+    (w) => w.movieId === request.params.id
+  )
 
-  const foundInWatchlist = req.user.watchlist.find(
-    (w) => w.movieId === req.params.id
+  const foundInWatched = request.user.watched.find(
+    (w) => w.movieId === request.params.id
   )
 
   if (foundInWatchlist) {
-    req.user.watchlist = req.user.watchlist.filter(
-      (w) => w.movieId !== req.params.id
+    request.user.watchlist = request.user.watchlist.filter(
+      (w) => w.movieId !== request.params.id
     )
   }
-
-  await req.user.save()
-
-  res.send(movieToBeSaved)
-})
-
-movieRouter.post("/addmovie/watched/:id", async (req, res) => {
-  if (!req.user) {
-    console.log("must be logged add a movie to watched")
-    res.end()
+  if (!foundInWatched) {
+    request.user.watched = request.user.watched.concat({
+      movieId: movieInfo.id,
+      poster: movieInfo.poster_path !== null ? movieInfo.poster_path : "",
+      rating: 2,
+    })
   }
 
-  const movieInfo = await moviedb.movieInfo(req.params.id)
+  request.user.diary = request.user.diary.concat(movieToBeSaved)
+
+  await request.user.save()
+
+  return response.send(movieToBeSaved)
+})
+
+movieRouter.post("/addmovie/watched/:id", async (request, response) => {
+  if (!request.user) {
+    return response.status(401).json({
+      error: "Must be logged in to add a movie to your watched",
+    })
+  }
+
+  const movieInfo = await moviedb.movieInfo(request.params.id)
 
   const movieToBeSaved = {
     movieId: movieInfo.id,
@@ -65,75 +86,61 @@ movieRouter.post("/addmovie/watched/:id", async (req, res) => {
     rating: 2,
   }
 
-  req.user.watched = req.user.watched.concat(movieToBeSaved)
+  const foundInWatchlist = request.user.watchlist.find(
+    (w) => w.movieId === request.params.id
+  )
 
-  const foundInWatchlist = req.user.watchlist.find(
-    (w) => w.movieId === req.params.id
+  const foundInWatched = request.user.watched.find(
+    (w) => w.movieId === request.params.id
   )
 
   if (foundInWatchlist) {
-    req.user.watchlist = req.user.watchlist.filter(
-      (w) => w.movieId !== req.params.id
+    request.user.watchlist = request.user.watchlist.filter(
+      (w) => w.movieId !== request.params.id
     )
   }
 
-  await req.user.save()
-
-  res.send(movieToBeSaved)
-})
-
-movieRouter.post("/addmovie/watchlist/:id", async (req, res) => {
-  if (!req.user) {
-    console.log("must be logged add a movie to watchlist")
-    res.end()
+  if (foundInWatched) {
+    return response.status(400).json({
+      error: "Movie is already in your watched",
+    })
   }
 
-  const movieInfo = await moviedb.movieInfo(req.params.id)
+  request.user.watched = request.user.watched.concat(movieToBeSaved)
+
+  await request.user.save()
+
+  return response.send(movieToBeSaved)
+})
+
+movieRouter.post("/addmovie/watchlist/:id", async (request, response) => {
+  if (!request.user) {
+    return response.status(401).json({
+      error: "Must be logged in to add a movie to your watchlist",
+    })
+  }
+
+  const movieInfo = await moviedb.movieInfo(request.params.id)
 
   const movieToBeSaved = {
     movieId: movieInfo.id,
     poster: movieInfo.poster_path,
   }
 
-  req.user.watchlist = req.user.watchlist.concat(movieToBeSaved)
-  await req.user.save()
+  const foundInWatchlist = request.user.watchlist.find(
+    (w) => w.movieId === request.params.id
+  )
 
-  res.send(movieToBeSaved)
+  if (foundInWatchlist) {
+    return response.status(400).json({
+      error: "Movie is already in your watchlist",
+    })
+  }
+
+  request.user.watchlist = request.user.watchlist.concat(movieToBeSaved)
+  await request.user.save()
+
+  return response.send(movieToBeSaved)
 })
-
-// export const searchMovie = async (req) => {
-//   const parameters = {
-//     query: req.query.name,
-//     page: 1,
-//   }
-//   try {
-//     const res = await moviedb.searchMovie(parameters)
-//     return res.results
-//   } catch (error) {
-//     return newError(error)
-//   }
-// }
-
-// export const searchPerson = async (req) => {
-//   const parameters = {
-//     query: req.query.name,
-//     page: 1,
-//   }
-//   try {
-//     const res = await moviedb.searchPerson(parameters)
-//     return res.results
-//   } catch (error) {
-//     return newError(error)
-//   }
-// }
-
-// export const movieKeywords = async (req) => {
-//   try {
-//     const res = await moviedb.movieKeywords({ query: req.query.name })
-//     return res.results
-//   } catch (error) {
-//     return newError(error)
-//   }
-// }
 
 module.exports = movieRouter

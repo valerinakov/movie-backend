@@ -19,7 +19,12 @@ const errorHandler = (error, request, response, next) => {
     return response.status(401).json({ error: "token expired" })
   } else if (error.name === "CastError") {
     return response.status(401).json({ error: "invalid user id" })
+  } else if (error.name === "AxiosError") {
+    return response.status(404).json({ error: "movie not found" })
   }
+
+  // console.log("test", error.name)
+  // console.log("test two", error)
 
   next(error)
 }
