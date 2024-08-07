@@ -143,4 +143,96 @@ movieRouter.post("/addmovie/watchlist/:id", async (request, response) => {
   return response.send(movieToBeSaved)
 })
 
+movieRouter.delete("/deletemovie/watchlist/:id", async (request, response) => {
+  if (!request.user) {
+    return response.status(401).json({
+      error: "Must be logged in to delete a movie from your watchlist",
+    })
+  }
+
+  const foundInWatchlist = request.user.watchlist.find(
+    (w) => w.movieId === request.params.id
+  )
+
+  if (!foundInWatchlist) {
+    return response.status(400).json({
+      error: "Movie is not in your watchlist",
+    })
+  }
+
+  if (foundInWatchlist) {
+    request.user.watchlist = request.user.watchlist.filter(
+      (w) => w.movieId !== request.params.id
+    )
+  }
+
+  await request.user.save()
+
+  return response.end()
+})
+
+movieRouter.delete("/deletemovie/diary/:id", async (request, response) => {
+  if (!request.user) {
+    return response.status(401).json({
+      error: "Must be logged in to delete a movie from your diary",
+    })
+  }
+
+  const foundInDiary = request.user.diary.find(
+    (d) => d.id === request.params.id
+  )
+
+  if (!foundInDiary) {
+    return response.status(400).json({
+      error: "This diary entry was not found in your diary",
+    })
+  }
+
+  if (foundInDiary) {
+    request.user.diary = request.user.diary.filter(
+      (d) => d.id !== request.params.id
+    )
+  }
+
+  await request.user.save()
+
+  return response.end()
+})
+
+movieRouter.delete("/deletemovie/watched/:id", async (request, response) => {
+  if (!request.user) {
+    return response
+      .status(401)
+      .json({ error: "Must be logged in to delete a movie from your watched" })
+  }
+
+  const foundInWatched = request.user.watched.find(
+    (w) => w.movieId === request.params.id
+  )
+
+  const foundInDiary = request.user.diary.find(
+    (d) => d.movieId === request.params.id
+  )
+
+  if (!foundInWatched) {
+    return response
+      .status(400)
+      .json({ error: "This movie is not in your watched movies" })
+  }
+
+  request.user.watched = request.user.watched.filter(
+    (w) => w.movieId !== request.params.id
+  )
+
+  if (foundInDiary) {
+    request.user.diary = request.user.diary.filter(
+      (d) => d.movieId !== request.params.id
+    )
+  }
+
+  await request.user.save()
+
+  return response.end()
+})
+
 module.exports = movieRouter
