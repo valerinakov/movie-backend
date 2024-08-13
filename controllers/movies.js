@@ -33,14 +33,32 @@ movieRouter.post("/addmovie/diary/:id", async (request, response) => {
       error: "Must be logged in to add a movie to your diary",
     })
   }
+  if (request.body.rating) {
+    if (isNaN(request.body.rating)) {
+      return response.status(400).json({
+        error: "Rating must be a number",
+      })
+    }
+    if (request.body.rating % 1 != 0) {
+      return response.status(400).json({
+        error: "Rating must be a whole number",
+      })
+    }
+    if (request.body.rating < 0 || request.body.rating > 10) {
+      return response.status(400).json({
+        error: "Rating must be between 0 and 10",
+      })
+    }
+  }
+  console.log(request.body)
 
   const movieInfo = await moviedb.movieInfo(request.params.id)
 
   const movieToBeSaved = {
     movieId: movieInfo.id,
     poster: movieInfo.poster_path !== null ? movieInfo.poster_path : "",
-    rating: 2,
-    review: "test",
+    rating: parseInt(request.body.rating) || 0,
+    review: request.body.review.toString() || "",
   }
 
   const foundInWatchlist = request.user.watchlist.find(
@@ -60,7 +78,7 @@ movieRouter.post("/addmovie/diary/:id", async (request, response) => {
     request.user.watched = request.user.watched.concat({
       movieId: movieInfo.id,
       poster: movieInfo.poster_path !== null ? movieInfo.poster_path : "",
-      rating: 2,
+      rating: parseInt(request.body.rating) || 0,
     })
   }
 
@@ -78,12 +96,30 @@ movieRouter.post("/addmovie/watched/:id", async (request, response) => {
     })
   }
 
+  if (request.body.rating) {
+    if (isNaN(request.body.rating)) {
+      return response.status(400).json({
+        error: "Rating must be a number",
+      })
+    }
+    if (request.body.rating % 1 != 0) {
+      return response.status(400).json({
+        error: "Rating must be a whole number",
+      })
+    }
+    if (request.body.rating < 0 || request.body.rating > 10) {
+      return response.status(400).json({
+        error: "Rating must be between 0 and 10",
+      })
+    }
+  }
+
   const movieInfo = await moviedb.movieInfo(request.params.id)
 
   const movieToBeSaved = {
     movieId: movieInfo.id,
     poster: movieInfo.poster_path,
-    rating: 2,
+    rating: parseInt(request.body.rating) || 0,
   }
 
   const foundInWatchlist = request.user.watchlist.find(
@@ -229,6 +265,109 @@ movieRouter.delete("/deletemovie/watched/:id", async (request, response) => {
       (d) => d.movieId !== request.params.id
     )
   }
+
+  await request.user.save()
+
+  return response.end()
+})
+
+movieRouter.put("/updatemovie/watched/:id", async (request, response) => {
+  if (!request.user) {
+    return response.status(401).json({
+      error: "Must be logged in to update a movie from your watched",
+    })
+  }
+
+  const foundInWatched = request.user.watched.find(
+    (w) => w.movieId === request.params.id
+  )
+
+  if (!foundInWatched) {
+    return response.status(400).json({
+      error: "Movie you are trying to update is not in your watched movies",
+    })
+  }
+
+  if (request.body.rating) {
+    if (isNaN(request.body.rating)) {
+      return response.status(400).json({
+        error: "Rating must be a number",
+      })
+    }
+    if (request.body.rating % 1 != 0) {
+      return response.status(400).json({
+        error: "Rating must be a whole number",
+      })
+    }
+    if (request.body.rating < 0 || request.body.rating > 10) {
+      return response.status(400).json({
+        error: "Rating must be between 0 and 10",
+      })
+    }
+  } else {
+    return response.status(400).json({
+      error: "Must provide rating to update watched movie",
+    })
+  }
+
+  request.user.watched.map((w) => {
+    if (w.movieId === request.params.id) {
+      w.rating = request.body.rating
+      return w
+    } else {
+      return w
+    }
+  })
+
+  await request.user.save()
+
+  return response.end()
+})
+
+movieRouter.put("/updatemovie/diary/:id", async (request, response) => {
+  if (!request.user) {
+    return response.status(401).json({
+      error: "Must be logged in to update a movie from your watched",
+    })
+  }
+
+  const foundInDiary = request.user.diary.find(
+    (d) => d.id === request.params.id
+  )
+
+  if (!foundInDiary) {
+    return response.status(400).json({
+      error: "Diary entry you are trying to update is not in your diary",
+    })
+  }
+
+  if (request.body.rating) {
+    if (isNaN(request.body.rating)) {
+      return response.status(400).json({
+        error: "Rating must be a number",
+      })
+    }
+    if (request.body.rating % 1 != 0) {
+      return response.status(400).json({
+        error: "Rating must be a whole number",
+      })
+    }
+    if (request.body.rating < 0 || request.body.rating > 10) {
+      return response.status(400).json({
+        error: "Rating must be between 0 and 10",
+      })
+    }
+  }
+
+  request.user.diary.map((d) => {
+    if (d.id === request.params.id) {
+      d.rating = request.body.rating ? request.body.rating : foundInDiary.rating
+      d.review = request.body.review ? request.body.review : foundInDiary.review
+      return d
+    } else {
+      return d
+    }
+  })
 
   await request.user.save()
 
