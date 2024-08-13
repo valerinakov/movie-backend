@@ -36,6 +36,11 @@ app.use("/api/users", userExtractor, usersRouter)
 app.use("/api/login", loginRouter)
 app.use("/api/movies", userExtractor, movieRouter)
 
+if (process.env.NODE_ENV === "test") {
+  const testingRouter = require("./controllers/testing")
+  app.use("/api/testing", testingRouter)
+}
+
 app.use(errorHandler)
 
 module.exports = app
