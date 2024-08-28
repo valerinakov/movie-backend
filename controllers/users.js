@@ -81,7 +81,7 @@ usersRouter.delete("/deletefriend/:id", async (request, response) => {
   })
 
   await request.user.save()
-  return response.end()
+  return response.status(204).end()
 })
 
 usersRouter.get("/friends/", async (request, response) => {
