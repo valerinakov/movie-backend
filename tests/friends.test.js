@@ -29,7 +29,7 @@ describe("when testing friends api", () => {
         .expect(200)
         .expect("Content-Type", /application\/json/)
 
-      const test = await api
+      await api
         .get("/api/users/friends")
         .set("Authorization", "Bearer ".concat(login.body.token))
         .expect(200)
